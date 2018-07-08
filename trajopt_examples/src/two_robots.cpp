@@ -238,7 +238,6 @@ int main(int argc, char** argv)
 
   // Setup Problem
   ProblemConstructionInfo pci = cppMethod();
-  pci.set
   TrajOptProbPtr prob = ConstructProblem(pci);
 
   // Solve Trajectory
