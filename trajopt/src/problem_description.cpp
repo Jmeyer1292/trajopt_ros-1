@@ -801,4 +801,68 @@ void JointConstraintInfo::hatch(TrajOptProb& prob)
     prob.addLinearConstraint(exprSub(AffExpr(vars[j]), vals[j]), EQ);
   }
 }
+
+void CartesianVelocityCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+{
+  // Not implemented
+  (void)pci;
+  (void)v;
+}
+
+class CartesianVelocityErrorCalculator : public VectorOfVector
+{
+public:
+  CartesianVelocityErrorCalculator(tesseract::BasicKinConstPtr kin, const std::string& link_name,
+                                   tesseract::BasicEnvConstPtr env)
+    : kin_(kin), link_name_(link_name), env_(env)
+  {
+  }
+
+  Eigen::VectorXd operator()(const Eigen::VectorXd& x) const override
+  {
+    Eigen::VectorXd first_joints = x.head(kin_->numJoints());
+    Eigen::VectorXd last_joints = x.tail(kin_->numJoints());
+
+    Eigen::VectorXd diff = last_joints - first_joints;
+
+    Eigen::MatrixXd jac;
+    jac.resize(6, kin_->numJoints());
+
+//    std::cout << "JAC SIZE: " << jac.rows() << " " << jac.cols() << "\n";
+
+    kin_->calcJacobian(jac, Eigen::Affine3d::Identity(), last_joints, link_name_, *env_->getState());
+
+    Eigen::VectorXd velocities = jac * diff;
+    return velocities;
+  }
+
+private:
+  tesseract::BasicKinConstPtr kin_;
+  std::string link_name_;
+  tesseract::BasicEnvConstPtr env_;
+};
+
+void CartesianVelocityCostInfo::hatch(TrajOptProb& prob)
+{
+  std::shared_ptr<CartesianVelocityErrorCalculator> pointer (
+        new CartesianVelocityErrorCalculator(prob.GetKin(), link, prob.GetEnv()));
+
+  const auto n_steps = prob.GetNumSteps();
+  for (int i = 1; i < n_steps; ++i)
+  {
+    // Add a cost for each pair of points
+    auto vars0 = prob.GetVarRow(i - 1);
+    auto vars1 = prob.GetVarRow(i);
+    auto step_pair = concat(vars0, vars1);
+
+    prob.addCost(CostPtr(new CostFromErrFunc(pointer, step_pair, toVectorXd(coeffs), ABS, name)));
+  }
+//  prob.addCost(CostPtr(new JointVelCost(prob.GetVars(), toVectorXd(coeffs))));
+//  prob.getCosts().back()->setName(name);
+
+//  VectorOfVectorPtr f(new StaticCartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
+//  prob.addCost(CostPtr(new CostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
+
+}
+
 }

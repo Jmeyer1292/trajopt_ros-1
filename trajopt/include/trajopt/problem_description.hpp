@@ -274,6 +274,15 @@ struct JointJerkCostInfo : public TermInfo, public MakesCost
   DEFINE_CREATE(JointJerkCostInfo)
 };
 
+// Todo: Collision penalty
+struct CartesianVelocityCostInfo : public TermInfo
+{
+  DblVec coeffs; // x, y, z, roll, pitch, yaw
+  std::string link;
+  void fromJson(ProblemConstructionInfo& pci, const Value& v) override;
+  void hatch(TrajOptProb& prob) override;
+};
+
 /**
 \brief %Collision penalty
 

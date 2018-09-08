@@ -164,6 +164,24 @@ ProblemConstructionInfo cppMethod()
   collision->info = createSafetyMarginDataVector(pci.basic_info.n_steps, 0.01, 20);
   pci.cost_infos.push_back(collision);
 
+//  std::shared_ptr<CartVelCntInfo> cart_vel (new CartVelCntInfo);
+
+//  cart_vel->first_step = 0;
+//  cart_vel->last_step = pci.basic_info.n_steps - 1;
+//  cart_vel->link= "grinder_frame";
+//  cart_vel->name ="cart_vel";
+//  cart_vel->term_type = TT_COST;
+//  cart_vel->max_displacement = 0.25 * 0.0254;
+
+//  pci.cost_infos.push_back(cart_vel);
+
+  std::shared_ptr<CartesianVelocityCostInfo> cart_vel (new CartesianVelocityCostInfo());
+  cart_vel->coeffs = std::vector<double>{5, 5, 5, 0, 0, 0.};
+  cart_vel->link = "grinder_frame";
+  cart_vel->name = "cart_vel";
+  cart_vel->term_type = TT_COST;
+  pci.cost_infos.push_back(cart_vel);
+
   // Populate Constraints
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
